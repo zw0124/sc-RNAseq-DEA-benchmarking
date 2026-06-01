@@ -19,6 +19,6 @@ process PLOT_FPR_BIN {
 
     stub:
     """
-    touch ${output_file}
+    touch fpr_boxplot_${scenario}_p${p_val}.png
     """
 }

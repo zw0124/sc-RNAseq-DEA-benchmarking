@@ -24,8 +24,15 @@ workflow BIO {
 
     main:
 
-    ch_bio_renamed = prepared_bio_h5ad.map { file -> tuple([scenario: 'bio'], file) }
-    PREPROCESSING(ch_bio_renamed, preprocessing_threshold)
+    ch_perez_bio = prepared_bio_h5ad.map { file ->
+        tuple([dataset: 'perez', scenario: 'bio', run: 1], file)
+    }
+    ch_kang_bio = Channel.fromPath(params.kang_h5ad).map { file ->
+        tuple([dataset: 'kang', scenario: 'bio', run: 1], file)
+    }
+    ch_bio_input = ch_perez_bio.mix(ch_kang_bio)
+
+    PREPROCESSING(ch_bio_input, preprocessing_threshold)
     BIO_UNIVERSE_GENES(PREPROCESSING.out)
 
     H5_SEURAT(PREPROCESSING.out)
@@ -82,15 +89,21 @@ workflow BIO {
     FILTER_LFC0_FILTER05(ch_lfc0_filter05, lfc05_threshold, bio_adj_p_cutoff)
     FILTER_LFC05_FILTER05(ch_lfc05_filter05, lfc05_threshold, bio_adj_p_cutoff)
 
+    ch_universe_by_dataset = BIO_UNIVERSE_GENES.out
+        .map { meta, universe -> tuple(meta.dataset, meta, universe) }
+
     ch_enrich_lfc0_filter0 = FILTER_LFC0_FILTER0.out.filtered
-        .combine(BIO_UNIVERSE_GENES.out)
-        .map { meta1, filtered, _meta2, universe -> tuple(meta1, filtered, universe) }
+        .map { meta, filtered -> tuple(meta.dataset, meta, filtered) }
+        .join(ch_universe_by_dataset)
+        .map { _dataset, meta1, filtered, _meta2, universe -> tuple(meta1, filtered, universe) }
     ch_enrich_lfc0_filter05 = FILTER_LFC0_FILTER05.out.filtered
-        .combine(BIO_UNIVERSE_GENES.out)
-        .map { meta1, filtered, _meta2, universe -> tuple(meta1, filtered, universe) }
+        .map { meta, filtered -> tuple(meta.dataset, meta, filtered) }
+        .join(ch_universe_by_dataset)
+        .map { _dataset, meta1, filtered, _meta2, universe -> tuple(meta1, filtered, universe) }
     ch_enrich_lfc05_filter05 = FILTER_LFC05_FILTER05.out.filtered
-        .combine(BIO_UNIVERSE_GENES.out)
-        .map { meta1, filtered, _meta2, universe -> tuple(meta1, filtered, universe) }
+        .map { meta, filtered -> tuple(meta.dataset, meta, filtered) }
+        .join(ch_universe_by_dataset)
+        .map { _dataset, meta1, filtered, _meta2, universe -> tuple(meta1, filtered, universe) }
 
     REACTOME_LFC0_FILTER0(ch_enrich_lfc0_filter0)
     REACTOME_LFC0_FILTER05(ch_enrich_lfc0_filter05)

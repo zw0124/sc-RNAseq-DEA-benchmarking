@@ -15,6 +15,7 @@ process MEMENTO {
         --input $sc_rds_file \
         --output ${meta.scenario}_memento_${meta.run}.tsv \
         --scenario ${meta.scenario} \
+        --dataset '${meta.dataset}' \
         --n_cores ${task.cpus}
     """
 

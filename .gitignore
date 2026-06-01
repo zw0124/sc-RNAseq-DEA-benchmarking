@@ -11,6 +11,7 @@ results/
 *.rds
 *.RDS
 *.h5ad
+!assets/kang.h5ad
 *.h5
 *.loom
 *.mtx

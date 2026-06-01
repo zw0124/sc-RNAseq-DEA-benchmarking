@@ -7,7 +7,7 @@ process BIO_FILTER_GENES {
     val adj_p_cutoff
 
     output:
-    tuple val(meta), path("filtered_genes_${meta.scenario}_${meta.method}.tsv"), emit: filtered
+    tuple val(meta), path("filtered_genes_${meta.dataset}_${meta.scenario}_${meta.method}.tsv"), emit: filtered
 
     script:
     """
@@ -16,11 +16,11 @@ process BIO_FILTER_GENES {
         --de-result '${de_result}' \
         --lfc-threshold '${lfc_threshold}' \
         --adj-p-cutoff '${adj_p_cutoff}' \
-        --output-file "filtered_genes_${meta.scenario}_${meta.method}.tsv"
+        --output-file "filtered_genes_${meta.dataset}_${meta.scenario}_${meta.method}.tsv"
     """
 
     stub:
     """
-    touch "filtered_genes_${meta.scenario}_${meta.method}.tsv"
+    touch "filtered_genes_${meta.dataset}_${meta.scenario}_${meta.method}.tsv"
     """
 }

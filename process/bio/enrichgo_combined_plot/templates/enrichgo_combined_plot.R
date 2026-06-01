@@ -73,14 +73,16 @@ classify_pathway_block <- function(groups) {
 
 read_enrich_file <- function(f) {
   base <- basename(f)
-  strategy <- NA_character_
-  for (s in strategy_levels) {
-    if (grepl(paste0("^bio_enrich_reactome_", s, "_"), base)) {
-      strategy <- s
-      break
-    }
-  }
-  if (is.na(strategy)) return(NULL)
+  pattern <- paste0(
+    "^bio_enrich_reactome_([^_]+)_(",
+    paste(strategy_levels, collapse = "|"),
+    ")_(.+)\\.tsv$"
+  )
+  match <- regmatches(base, regexec(pattern, base))[[1]]
+  if (length(match) != 4) return(NULL)
+
+  dataset <- match[2]
+  strategy <- match[3]
 
   dt <- fread(f)
   if (nrow(dt) == 0) return(NULL)
@@ -89,6 +91,7 @@ read_enrich_file <- function(f) {
   if (!all(req_cols %in% names(dt))) return(NULL)
 
   dt <- dt[, ..req_cols]
+  dt[, dataset := dataset]
   dt[, strategy := strategy]
   dt[]
 }
@@ -100,7 +103,7 @@ enrich_rows <- enrich_rows[!vapply(enrich_rows, is.null, logical(1))]
 all_enrich_dt <- if (length(enrich_rows) > 0) {
   rbindlist(enrich_rows, fill = TRUE)
 } else {
-  data.table(strategy = character(0), method = character(0), Description = character(0),
+  data.table(dataset = character(0), strategy = character(0), method = character(0), Description = character(0),
              p.adjust = numeric(0), GeneRatio = character(0), Count = integer(0))
 }
 
@@ -116,24 +119,26 @@ all_enrich_dt <- all_enrich_dt[strategy %in% strategy_levels]
 all_enrich_dt[, strategy := factor(strategy, levels = strategy_levels)]
 
 top_rows <- list()
-for (s in strategy_levels) {
-  for (m in unique(all_enrich_dt[strategy == s]$method)) {
-    sub <- all_enrich_dt[strategy == s & method == m]
-    setorder(sub, p.adjust)
-    top_rows[[length(top_rows) + 1]] <- sub[1:min(top_n, .N)]
+for (d in unique(all_enrich_dt$dataset)) {
+  for (s in strategy_levels) {
+    for (m in unique(all_enrich_dt[dataset == d & strategy == s]$method)) {
+      sub <- all_enrich_dt[dataset == d & strategy == s & method == m]
+      setorder(sub, p.adjust)
+      top_rows[[length(top_rows) + 1]] <- sub[1:min(top_n, .N)]
+    }
   }
 }
 
 top_union_dt <- rbindlist(top_rows, fill = TRUE)
 term_union <- unique(top_union_dt$Description)
 
-strategy_methods <- unique(all_enrich_dt[, .(strategy, method)])
-grid_dt <- strategy_methods[, .(Description = term_union), by = .(strategy, method)]
+strategy_methods <- unique(all_enrich_dt[, .(dataset, strategy, method)])
+grid_dt <- strategy_methods[, .(Description = term_union), by = .(dataset, strategy, method)]
 
 plot_dt <- merge(
   grid_dt,
   all_enrich_dt,
-  by = c("strategy", "method", "Description"),
+  by = c("dataset", "strategy", "method", "Description"),
   all.x = TRUE
 )
 
@@ -147,9 +152,9 @@ plot_dt[, PathwayBlock := factor(classify_pathway_block(PathwayGroup), levels = 
 
 method_n <- copy(all_enrich_dt)
 method_n[, InputGeneN := parse_ratio_den(GeneRatio)]
-method_n <- method_n[!is.na(InputGeneN), .(InputGeneN = max(InputGeneN)), by = .(strategy, method)]
+method_n <- method_n[!is.na(InputGeneN), .(InputGeneN = max(InputGeneN)), by = .(dataset, strategy, method)]
 method_n[, method_label := paste0(method, "\nn=", InputGeneN)]
-plot_dt <- merge(plot_dt, method_n, by = c("strategy", "method"), all.x = TRUE)
+plot_dt <- merge(plot_dt, method_n, by = c("dataset", "strategy", "method"), all.x = TRUE)
 plot_dt[is.na(method_label), method_label := method]
 
 term_order <- top_union_dt[, .(
@@ -171,6 +176,8 @@ plot_dt[, Description := factor(Description, levels = rev(term_order$Description
 
 plot_dt[, strategy_label := strategy_labels[as.character(strategy)]]
 plot_dt[, strategy_label := factor(strategy_label, levels = strategy_labels)]
+dataset_levels <- unique(plot_dt$dataset)
+plot_dt[, dataset_label := factor(dataset, levels = dataset_levels)]
 
 method_label_levels <- unique(plot_dt[order(strategy, method)]$method_label)
 strip_x_label <- " "
@@ -243,7 +250,7 @@ p <- ggplot(plot_dt, aes(x = method_label, y = y_pos)) +
     alpha = 0.9,
     na.rm = FALSE
   ) +
-  facet_grid(. ~ strategy_label, scales = "free_x", space = "free_x") +
+  facet_grid(dataset_label ~ strategy_label, scales = "free_x", space = "free_x") +
   scale_size_continuous(name = "GeneRatio", range = c(1.2, 9)) +
   scale_color_gradient(
     name = expression(-log[10]("q")),
@@ -273,7 +280,7 @@ p <- ggplot(plot_dt, aes(x = method_label, y = y_pos)) +
     panel.spacing.x = unit(0.8, "lines")
   )
 
-plot_height_px <- min(16000, max(2600, 450 + length(term_union) * 78))
+plot_height_px <- min(16000, max(2600, 450 + length(term_union) * 78 * max(1, length(dataset_levels))))
 plot_width_px <- 7200
 
 ggsave(

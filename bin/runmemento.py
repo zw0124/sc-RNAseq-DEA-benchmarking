@@ -8,6 +8,7 @@ parser = argparse.ArgumentParser(description='Run memento differential expressio
 parser.add_argument('--input', type=str, help='Input file path')    
 parser.add_argument('--output', type=str, help='Output file path')    
 parser.add_argument('--scenario', help = "Scenario of data", required=True)    
+parser.add_argument('--dataset', help="Dataset name", default='')
 parser.add_argument('--n_cores', type=int, default=4, help='Number of CPU cores to use')  
     
 args = parser.parse_args()    
@@ -23,8 +24,18 @@ if len(label_classes) != 2:
 ctrl_label = label_classes[0]    
 treatment_label = label_classes[1]    
     
-is_sim = any(k in args.scenario.lower() for k in ['dataset', 'fixed'])  
-q_val = 0.0 if is_sim else 0.15  
+scenario = args.scenario.lower()
+dataset = args.dataset.lower()
+
+is_sim = any(k in scenario for k in ['dataset', 'fixed'])
+is_bio = scenario.startswith('bio')
+
+if is_sim:
+    q_val = 0.0
+elif is_bio and dataset == 'kang':
+    q_val = 0.07
+else:
+    q_val = 0.15
   
 adata.obs['capture_rate'] = q_val    
 memento.setup_memento(adata, q_column='capture_rate', filter_mean_thresh=0)    

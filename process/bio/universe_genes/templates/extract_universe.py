@@ -11,4 +11,4 @@ genes = genes.dropna()
 genes = genes[genes != ""]
 genes = pd.Series(pd.unique(genes))
 
-genes.to_frame(name="gene").to_csv("${meta.scenario}.universe.tsv", sep="\t", index=False)
+genes.to_frame(name="gene").to_csv("${meta.dataset}_${meta.scenario}.universe.tsv", sep="\t", index=False)

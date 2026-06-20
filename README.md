@@ -4,7 +4,7 @@
 This repository provides a benchmarking framework for evaluating differential expression analysis methods applied to single-cell transcriptomics. It assesses the practical performance of diverse statistical approaches—including DESeq2, edgeR, limma, nebula and bootstrap-based methods. The goal is to offer empirical guidance for method selection in scRNA-seq studies.
 
 ## Nextflow Pipeline
-This workflow accompanies our upcoming manuscript: **"Benchmarking at nominal FDR thresholds refines method selection in single-cell differential expression analysis"**. The provided Nextflow pipeline is designed to easily reproduce the analytical workflows, core results, and figures generated during our evaluations.
+This workflow accompanies our upcoming manuscript: **"Corrected hierarchical bootstrap inference and method selection in multisample single-cell RNA-seq differential "**. The provided Nextflow pipeline is designed to easily reproduce the analytical workflows, core results, and figures generated during our evaluations.
 
 To ensure complete reproducibility, all software dependencies are encapsulated in Docker containers. Nextflow automatically retrieves these images from Docker Hub via Apptainer during execution, requiring no manual environment setup.
 

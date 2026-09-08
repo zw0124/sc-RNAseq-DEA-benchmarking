@@ -52,12 +52,22 @@ if (nrow(dt) > 0) {
     sig <- dt[!is.na(adj_value) & !is.na(lfc_value) & adj_value <= adj_p_cutoff & abs(lfc_value) >= lfc_threshold]
     
     if (nrow(sig) > 0) {
-      sig_genes <- unique(sig$gene)
-      out_dt <- data.table(method = method, gene = sig_genes)
+      setorder(sig, adj_value)
+      out_dt <- sig[, .(lfc = lfc_value[1]), by = gene]
+      out_dt[, method := argv$method]
+      out_dt[, direction := fifelse(lfc > 0, "up", fifelse(lfc < 0, "down", "zero"))]
+      setcolorder(out_dt, c("method", "gene", "lfc", "direction"))
       fwrite(out_dt, output_file, sep = "\t")
       quit(save = "no")
     }
   }
 }
 
-fwrite(data.table(method = character(0), gene = character(0)), output_file, sep = "\t")
+fwrite(
+  data.table(
+    method = character(0), gene = character(0),
+    lfc = numeric(0), direction = character(0)
+  ),
+  output_file,
+  sep = "\t"
+)

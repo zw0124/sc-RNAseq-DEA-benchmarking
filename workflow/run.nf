@@ -12,6 +12,7 @@ include { BOOTSTRAP2 } from '../process/sim/BOOTSTRAP2'
 include { BOOTSTRAP3 } from '../process/sim/BOOTSTRAP3'
 include { PREPARE_RUNTIME_TRACE } from '../process/run/prepare_runtime_trace'
 include { PLOT_RUNTIME_BENCHMARK } from '../process/run/plot_runtime_benchmark'
+include { PLOT_MEMORY_BENCHMARK } from '../process/run/plot_memory_benchmark'
 
 
 workflow RUNTIME {
@@ -71,4 +72,5 @@ workflow RUNTIME {
         PREPARE_RUNTIME_TRACE(ch_runtime_gate.collect())
 
         PLOT_RUNTIME_BENCHMARK(PREPARE_RUNTIME_TRACE.out.fixed_cells, PREPARE_RUNTIME_TRACE.out.fixed_genes)
+        PLOT_MEMORY_BENCHMARK(PREPARE_RUNTIME_TRACE.out.memory_summary)
 }

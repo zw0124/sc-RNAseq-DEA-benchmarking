@@ -19,6 +19,7 @@ workflow {
     runtime_n_fixed_genes = params.runtime_n_fixed_genes
 
     performance_enabled = params.performance_enabled
+    review_simulation_enabled = params.review_simulation_enabled
     performance_n_runs = params.performance_n_runs
     performance_n_genes = params.performance_n_genes
 
@@ -30,12 +31,13 @@ workflow {
         PREPARE_PEREZ(FETCH_PEREZ_CD4.out)
     }
 
-    if (performance_enabled) {
+    if (performance_enabled || review_simulation_enabled) {
         PERFORMANCE(
             performance_n_runs,
             performance_n_genes,
             preprocessing_threshold,
-            lfc_threshold
+            lfc_threshold,
+            review_simulation_enabled
         )
     }
 

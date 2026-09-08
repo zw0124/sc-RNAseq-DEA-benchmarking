@@ -32,6 +32,15 @@ nextflow run .
 ## Outputs
 By default, the pipeline outputs results and generated figures to the `./output` directory. You can override this behavior by altering the `nextflow.config` file or passing the `--output` flag during execution.
 
+### Cleaning simulation work files
+Simulation H5AD files and intermediate method outputs can consume substantial disk space in the Nextflow `work` directory. After confirming that the required figures and tables have been published to `output`, preview and then remove the cached work files with:
+
+```bash
+nextflow clean -n
+nextflow clean -f
+```
+
+Run the cleanup only when the cached tasks are no longer needed for `-resume`. The command does not remove the Apptainer image cache or results copied to `output`.
 
 
 

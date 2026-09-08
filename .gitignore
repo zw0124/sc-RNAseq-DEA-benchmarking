@@ -12,6 +12,7 @@ results/
 *.RDS
 *.h5ad
 !assets/kang.h5ad
+!assets/GSE135779_CD14_11v11.h5ad
 *.h5
 *.loom
 *.mtx

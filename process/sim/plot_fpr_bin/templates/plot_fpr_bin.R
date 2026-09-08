@@ -74,12 +74,37 @@ METHOD_ORDER <- c(
   "ttest", "wilcox", "edger", "limma", "deseq2", "nebula",
   "memento", "BOOTSTRAP3", "BOOTSTRAP2"
 )
+METHOD_LABELS <- c(
+  "ttest" = "T-test", "wilcox" = "Wilcoxon", "edger" = "edgeR",
+  "limma" = "limma", "deseq2" = "DESeq2", "nebula" = "NEBULA",
+  "memento" = "memento", "BOOTSTRAP3" = "BOOTSTRAP3", "BOOTSTRAP2" = "BOOTSTRAP2"
+)
 available_methods <- intersect(METHOD_ORDER, unique(plot_df[["method"]]))
 if (length(available_methods) == 0) {
   available_methods <- sort(unique(plot_df[["method"]]))
 }
 plot_df <- plot_df %>%
   mutate(method = factor(method, levels = available_methods))
+
+output_stem <- tools::file_path_sans_ext(output_file)
+runs_file <- paste0(output_stem, "_runs.tsv")
+summary_file <- paste0(output_stem, "_summary.tsv")
+summary_df <- plot_df %>%
+  group_by(sample_size, method) %>%
+  summarise(
+    p_threshold_used = first(p_threshold_used),
+    mean_fpr = mean(fpr, na.rm = TRUE),
+    sd_fpr = if (n() > 1) sd(fpr, na.rm = TRUE) else NA_real_,
+    min_fpr = min(fpr, na.rm = TRUE),
+    q1_fpr = quantile(fpr, 0.25, na.rm = TRUE),
+    median_fpr = median(fpr, na.rm = TRUE),
+    q3_fpr = quantile(fpr, 0.75, na.rm = TRUE),
+    max_fpr = max(fpr, na.rm = TRUE),
+    n_runs = n_distinct(run),
+    .groups = "drop"
+  )
+write.table(plot_df, runs_file, sep = "\t", row.names = FALSE, quote = FALSE)
+write.table(summary_df, summary_file, sep = "\t", row.names = FALSE, quote = FALSE)
 
 y_upper <- max(plot_df[["fpr"]], na.rm = TRUE)
 if (!is.finite(y_upper)) {
@@ -96,16 +121,21 @@ p <- ggplot(plot_df, aes(x = method, y = fpr, fill = method)) +
     x = "Method",
     y = "FPR"
   ) +
+  scale_x_discrete(
+    labels = METHOD_LABELS[available_methods],
+    expand = expansion(add = c(0.65, 0.9))
+  ) +
   scale_y_continuous(breaks = function(x) pretty(x, n = 6)) +
   coord_cartesian(ylim = c(0, y_upper)) +
-  theme_minimal() +
+  theme_minimal(base_size = 13) +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.text.x = element_text(angle = 30, hjust = 1, vjust = 1, size = 11, margin = margin(t = 5)),
     legend.position = "none",
     strip.background = element_rect(fill = "grey15", color = "grey30"),
     strip.text = element_text(color = "white", face = "bold"),
     panel.border = element_rect(color = "grey30", fill = NA, linewidth = 0.6),
-    panel.spacing.x = grid::unit(0.8, "lines")
+    panel.spacing.x = grid::unit(1.1, "lines"),
+    plot.margin = margin(8, 18, 8, 8)
   )
 
-ggsave(output_file, p, width = 13, height = 6, dpi = 300)
+ggsave(output_file, p, width = 18, height = 6.8, dpi = 300)

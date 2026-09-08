@@ -1,14 +1,14 @@
 process BIO_ENRICHGO_COMBINED_PLOT {
     tag "combined_reactome"
-    publishDir "${params.output}/bio", mode: 'copy', pattern: '*.png'
+    publishDir "${params.output}/bio", mode: 'copy', pattern: '*'
     cache false
     input:
     path lfc0_filter0_files
     path lfc0_filter05_files
     path lfc05_filter05_files
     output:
-    path "combined_reactome_bubble.png", emit: bubble
-    path "combined_reactome_terms.tsv", emit: terms
+    path "*_reactome_bubble.png", emit: bubble
+    path "reactome_terms.tsv", emit: terms
 
     script:
     """
@@ -17,7 +17,9 @@ process BIO_ENRICHGO_COMBINED_PLOT {
 
     stub:
     """
-    touch combined_reactome_bubble.png
-    echo -e "strategy\tmethod\tDescription\tp.adjust\tGeneRatio\tCount" > combined_reactome_terms.tsv
+    touch kang_reactome_bubble.png
+    touch perez_reactome_bubble.png
+    touch GSE135779_CD14_11v11_reactome_bubble.png
+    echo -e "dataset\tstrategy\tmethod\tDescription\tp.adjust\tGeneRatio\tCount" > reactome_terms.tsv
     """
 }

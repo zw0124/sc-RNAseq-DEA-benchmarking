@@ -30,7 +30,10 @@ workflow BIO {
     ch_kang_bio = Channel.fromPath(params.kang_h5ad).map { file ->
         tuple([dataset: 'kang', scenario: 'bio', run: 1], file)
     }
-    ch_bio_input = ch_perez_bio.mix(ch_kang_bio)
+    ch_gse135779_bio = Channel.fromPath(params.GSE135779_CD14_11v11_h5ad).map { file ->
+        tuple([dataset: 'GSE135779_CD14_11v11', scenario: 'bio', run: 1], file)
+    }
+    ch_bio_input = ch_perez_bio.mix(ch_kang_bio).mix(ch_gse135779_bio)
 
     PREPROCESSING(ch_bio_input, preprocessing_threshold)
     BIO_UNIVERSE_GENES(PREPROCESSING.out)
@@ -94,15 +97,15 @@ workflow BIO {
 
     ch_enrich_lfc0_filter0 = FILTER_LFC0_FILTER0.out.filtered
         .map { meta, filtered -> tuple(meta.dataset, meta, filtered) }
-        .join(ch_universe_by_dataset)
+        .combine(ch_universe_by_dataset, by: 0)
         .map { _dataset, meta1, filtered, _meta2, universe -> tuple(meta1, filtered, universe) }
     ch_enrich_lfc0_filter05 = FILTER_LFC0_FILTER05.out.filtered
         .map { meta, filtered -> tuple(meta.dataset, meta, filtered) }
-        .join(ch_universe_by_dataset)
+        .combine(ch_universe_by_dataset, by: 0)
         .map { _dataset, meta1, filtered, _meta2, universe -> tuple(meta1, filtered, universe) }
     ch_enrich_lfc05_filter05 = FILTER_LFC05_FILTER05.out.filtered
         .map { meta, filtered -> tuple(meta.dataset, meta, filtered) }
-        .join(ch_universe_by_dataset)
+        .combine(ch_universe_by_dataset, by: 0)
         .map { _dataset, meta1, filtered, _meta2, universe -> tuple(meta1, filtered, universe) }
 
     REACTOME_LFC0_FILTER0(ch_enrich_lfc0_filter0)

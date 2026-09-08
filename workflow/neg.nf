@@ -10,7 +10,6 @@ include { WILCOX } from '../process/sim/WILCOX'
 include { TTEST } from '../process/sim/TTEST'
 include { MEMENTO } from '../process/sim/MEMENTO'
 include { NEBULA } from '../process/sim/nebula/main'
-include { PLOT_FPR } from '../process/sim/plot_fpr/main'
 include { PLOT_FPR_BIN } from '../process/sim/plot_fpr_bin/main'
 include { BOOTSTRAP2 } from '../process/sim/BOOTSTRAP2'
 include { BOOTSTRAP3 } from '../process/sim/BOOTSTRAP3'
@@ -92,6 +91,5 @@ workflow NEGATIVE{
         .map { scenario, path_lists -> tuple(scenario, path_lists.flatten()) }
 
 
-    PLOT_FPR(ch_fpr_all_sample_sizes)
     PLOT_FPR_BIN(ch_fpr_all_sample_sizes, p_val)
 }

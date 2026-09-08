@@ -10,7 +10,7 @@ include { WILCOX } from '../process/sim/WILCOX'
 include { TTEST } from '../process/sim/TTEST'
 include { MEMENTO } from '../process/sim/MEMENTO'
 include { NEBULA } from '../process/sim/nebula/main'
-include { PLOT_OBS_FDR_POWER_GRID } from '../process/sim/plot_obs_fdr_power_grid/main'
+include { PLOT_REVIEW_SIMULATION } from '../process/sim/plot_review_simulation/main'
 include { BOOTSTRAP2 } from '../process/sim/BOOTSTRAP2'
 include { BOOTSTRAP3 } from '../process/sim/BOOTSTRAP3'
 include { H5_SEURAT } from '../process/sim/h5_seurat'
@@ -21,6 +21,7 @@ workflow PERFORMANCE {
     n_genes
     preprocessing_threshold
     lfc_threshold
+    review_simulation_enabled
 
     main:
     scenarios_regular = [
@@ -35,12 +36,31 @@ workflow PERFORMANCE {
         'dataset_n30_lfc2',
     ]
 
-    ch_scenarios_regular = channel.from(scenarios_regular)
+    scenarios_review = review_simulation_enabled ? [
+        'review_n18_lfc1',
+        'review_n18_lfc1p5',
+        'review_n18_lfc2',
+        'review_n22_lfc1',
+        'review_n22_lfc1p5',
+        'review_n22_lfc2',
+        'review_cv0p5_lfc1p5',
+        'review_cv1_lfc1p5',
+        'review_cv1p5_lfc1p5',
+        'review_m5_lfc1p5',
+        'review_m10_lfc1p5',
+        'review_m25_lfc1p5',
+        'review_m50_lfc1p5',
+        'review_m100_lfc1p5',
+        'review_m300_lfc1p5',
+        'review_stress_lfc1p5',
+    ] : []
+
+    ch_scenarios_regular = channel.fromList(scenarios_regular + scenarios_review)
     ch_runs = channel.from(1..n_runs)
 
     ch_meta_regular = ch_scenarios_regular.combine(ch_runs).map { scenario, run -> [scenario: scenario, run: run] }
     SIMULATION(ch_meta_regular, n_genes)
-    ch_sim_all = SIMULATION.out
+    ch_sim_all = SIMULATION.out.h5ad
 
     GROUND_TRUTH(ch_sim_all)
 
@@ -52,17 +72,23 @@ workflow PERFORMANCE {
 
     ch_sc_rds = H5_SEURAT.out.rds
     ch_sc_h5ad = H5_SEURAT.out.h5ad
+    ch_sc_rds_all_methods = ch_sc_rds.filter { meta, path ->
+        !(meta.scenario ==~ /^review_m(5|10|25|50|100|300)_lfc1p5$/)
+    }
+    ch_sc_h5ad_all_methods = ch_sc_h5ad.filter { meta, path ->
+        !(meta.scenario ==~ /^review_m(5|10|25|50|100|300)_lfc1p5$/)
+    }
 
-    DESEQ2(ch_sc_rds, lfc_threshold)
-    LIMMA(ch_sc_rds, lfc_threshold)
-    EDGER(ch_sc_rds, lfc_threshold)
+    DESEQ2(ch_sc_rds_all_methods, lfc_threshold)
+    LIMMA(ch_sc_rds_all_methods, lfc_threshold)
+    EDGER(ch_sc_rds_all_methods, lfc_threshold)
 
-    WILCOX(ch_sc_rds)
-    TTEST(ch_sc_rds)
+    WILCOX(ch_sc_rds_all_methods)
+    TTEST(ch_sc_rds_all_methods)
 
-    NEBULA(ch_sc_rds)
+    NEBULA(ch_sc_rds_all_methods)
 
-    MEMENTO(ch_sc_h5ad)
+    MEMENTO(ch_sc_h5ad_all_methods)
     BOOTSTRAP3(ch_sc_h5ad)
     BOOTSTRAP2(ch_sc_h5ad, lfc_threshold)
 
@@ -94,9 +120,19 @@ workflow PERFORMANCE {
     CALCULATE_METRICS(ch_meta_pval_groundtruth)
 
 
-    ch_obs_fdr_power_grid = CALCULATE_METRICS.out.fdr_power
+    ch_fdr_power_files = CALCULATE_METRICS.out.fdr_power
         .map { _meta, path_list -> path_list }
         .flatten()
         .collect()
-    PLOT_OBS_FDR_POWER_GRID(ch_obs_fdr_power_grid)
+
+    if (review_simulation_enabled) {
+        ch_review_design = SIMULATION.out.design
+            .map { _meta, path -> path }
+            .collect()
+        ch_fpr_files = CALCULATE_METRICS.out.fpr
+            .map { _meta, path_list -> path_list }
+            .flatten()
+            .collect()
+        PLOT_REVIEW_SIMULATION(ch_fdr_power_files, ch_review_design, ch_fpr_files)
+    }
 }

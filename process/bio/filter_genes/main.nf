@@ -21,6 +21,6 @@ process BIO_FILTER_GENES {
 
     stub:
     """
-    touch "filtered_genes_${meta.dataset}_${meta.scenario}_${meta.method}.tsv"
+    echo -e "method\tgene\tlfc\tdirection" > "filtered_genes_${meta.dataset}_${meta.scenario}_${meta.method}.tsv"
     """
 }

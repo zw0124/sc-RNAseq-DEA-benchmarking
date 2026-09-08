@@ -8,6 +8,7 @@ import scanpy as sc
 from anndata import AnnData
 from tqdm import tqdm
 
+# Fix all NumPy bootstrap draws for reproducible runs.
 np.random.seed(0)
 
 
@@ -15,15 +16,18 @@ parser = argparse.ArgumentParser(
     prog="Hierarchical Bootstrap",
     description="Original recursive hierarchical bootstrap with cell-level resampling"
 )
-parser.add_argument("--input", required=True)
-parser.add_argument("--output", required=True)
+parser.add_argument("--input", required=True, help="Input AnnData file in H5AD format")
+parser.add_argument("--output", required=True, help="Output gene-level TSV file")
 args = parser.parse_args()
 
 file_in = args.input
 file_out = args.output
 
+# Observation column defining the two groups being compared.
 GROUP_COL = "Condition"
+# Resampling levels from the broadest unit to the subject level.
 HIERARCHY_PRIORITY = ["Batch", "Sample"]
+# Number of hierarchical bootstrap replicates used for each group.
 BOOTSTRAP_ITER = 10_000
 
 

@@ -7,6 +7,8 @@ process PLOT_FPR_BIN {
 
     output:
     tuple val(scenario), path("fpr_boxplot_${scenario}_p${p_val}.png"), emit: fpr_bin
+    tuple val(scenario), path("fpr_boxplot_${scenario}_p${p_val}_runs.tsv"), emit: runs
+    tuple val(scenario), path("fpr_boxplot_${scenario}_p${p_val}_summary.tsv"), emit: summary
 
     script:
     output_file = "fpr_boxplot_${scenario}_p${p_val}.png"
@@ -20,5 +22,7 @@ process PLOT_FPR_BIN {
     stub:
     """
     touch fpr_boxplot_${scenario}_p${p_val}.png
+    touch fpr_boxplot_${scenario}_p${p_val}_runs.tsv
+    touch fpr_boxplot_${scenario}_p${p_val}_summary.tsv
     """
 }

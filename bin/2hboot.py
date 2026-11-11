@@ -117,7 +117,7 @@ def calculate_bootstrap_pvalues(adata, groupby_col, rep_col, batch_col, lfc_thre
     total_fails_up = np.sum([res[0] for res in results], axis=0)
     total_fails_down = np.sum([res[1] for res in results], axis=0)
     
-    p_values = np.minimum(total_fails_up, total_fails_down) * 2.0 / n_iters
+    p_values = (2.0 * np.minimum(total_fails_up, total_fails_down) + 1.0) / (n_iters + 1.0)
     
     all_A_reps = [r for reps in cond_A_reps.values() for r in reps]
     all_B_reps = [r for reps in cond_B_reps.values() for r in reps]
